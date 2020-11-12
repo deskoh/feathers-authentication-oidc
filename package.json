@@ -1,0 +1,43 @@
+{
+  "name": "feathers-authentication-oidc",
+  "version": "0.1.0",
+  "description": "OIDC Authentication for FeathersJS.",
+  "main": "lib/",
+  "scripts": {
+    "build": "tsc -p .",
+    "build:watch": "tsc -p . --watch",
+    "test": "mocha --recursive test/**/*.test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deskoh/feathers-authentication-oidc.git"
+  },
+  "keywords": [
+    "feathers",
+    "feathersjs",
+    "oidc"
+  ],
+  "author": "deskoh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/deskoh/feathers-authentication-oidc/issues"
+  },
+  "homepage": "https://github.com/deskoh/feathers-authentication-oidc",
+  "devDependencies": {
+    "@types/debug": "^4.1.5",
+    "@types/jsonwebtoken": "^8.5.0",
+    "@types/node": "^12.19.3",
+    "mocha": "^8.2.0",
+    "source-map-support": "^0.5.19",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.5"
+  },
+  "dependencies": {
+    "@feathersjs/authentication": "^4.5.9",
+    "@feathersjs/errors": "^4.5.9",
+    "axios": "^0.21.0",
+    "debug": "^4.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "jwks-rsa": "^1.11.0"
+  }
+}
