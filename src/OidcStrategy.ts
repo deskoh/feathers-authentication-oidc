@@ -1,4 +1,4 @@
-import { AuthenticationResult, JWTStrategy } from '@feathersjs/authentication';
+import { AuthenticationResult, JWTStrategy, ConnectionEvent } from '@feathersjs/authentication';
 import { NotAuthenticated } from '@feathersjs/errors';
 import { Params } from '@feathersjs/feathers';
 import Debug from 'debug';
@@ -25,8 +25,22 @@ export class OidcStrategy extends JWTStrategy {
     debug(this.configuration);
   }
 
-  async handleConnection(): Promise<void> {
-    return;
+  async handleConnection(event: ConnectionEvent, connection: any, authResult?: AuthenticationResult): Promise<void> {
+    const { strategy } = authResult?.authentication;
+
+    // Add authentication info only when using current strategy to allow concurrent usage with JwtStrategy.
+    if (event === 'login' && strategy === this.name) {
+      debug('Adding authentication information to connection');
+      connection.authentication = {
+        strategy: this.name,
+        accessToken: authResult?.accessToken,
+      };
+    } else if (event === 'disconnect') {
+      const { entity } = this.configuration;
+
+      delete connection[entity];
+      delete connection.authentication;
+    }
   }
 
   get entityId(): string {
@@ -116,8 +130,9 @@ export class OidcStrategy extends JWTStrategy {
 
     const decodedJwt = await this.verifyJwt(accessToken/*, params.jwt*/);
     const result: AuthenticationResult = {
-      // Use a 'truthy' value for Feathers authentication to skip JWT creation `createAccessToken`
-      accessToken: 'none',
+      // Provide accessToken for Feathers authentication to skip JWT creation in `createAccessToken`
+      // accessToken also required in auth service create after hook to be added to connection
+      accessToken,
       authentication: {
         strategy: this.name || 'oidc',
       }
@@ -137,6 +152,7 @@ export class OidcStrategy extends JWTStrategy {
     if (!existingEntity) {
       authEntity = await this.createEntity(decodedJwt, params)
     } else if (updateEntity) {
+      debug('updating entity', existingEntity);
       authEntity = await this.updateEntity(existingEntity, decodedJwt, params);
     } else {
       authEntity = existingEntity;
