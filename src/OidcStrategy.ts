@@ -26,7 +26,7 @@ export class OidcStrategy extends JWTStrategy {
   }
 
   async handleConnection(event: ConnectionEvent, connection: any, authResult?: AuthenticationResult): Promise<void> {
-    const { strategy } = authResult?.authentication;
+    const { strategy } = authResult?.authentication || {};
 
     // Add authentication info only when using current strategy to allow concurrent usage with JwtStrategy.
     if (event === 'login' && strategy === this.name) {
