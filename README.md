@@ -42,8 +42,8 @@ Example configuration.
     "entity": user,
     "authStrategies": ["oidc", /* other strategies */],
     "oidc": {
-      // For OIDC discovery (by appending /.well-known/openid-configuration)
-      // and used to validate `iss` field in JWT.
+      // Whitelisted issuers to trust (string or array) and for OIDC discovery
+      // (by appending /.well-known/openid-configuration)
       "issuer": "http://keycloak.127.0.0.1.nip.io:8080/auth/realms/dev",
       // Optional field to validate `aud`  in JWT field (usually OIDC client ID)
       "audience": ["spa-client1", "spa-client2"]
@@ -231,4 +231,6 @@ If the issuer uses a custom CA for HTTPS endpoint, set [`NODE_EXTRA_CA_CERTS`](h
 
 ## Known Issues
 
-Socket.io connection that is [authenticated](https://docs.feathersjs.com/api/client/socketio.html#authentication) using disconnect when JWT expires as `handleConnection` method of the Strategy is overriden to be an empty method. This might not be a major issue as the bounded lifetime (usually 5 mins) of JWT expiry is to reduce the window of a compromised token being used. Since the authenticated connection is established within the token validity, it could be uncessary to disconnect the connection after the JWT expires. However, it is still possible for a compromised token to be used within the short-lived validity to established a long-lived Socket.io connection.
+Socket.io connection that is [authenticated](https://docs.feathersjs.com/api/client/socketio.html#authentication) is not disconnected when JWT expires as `handleConnection` method of the Strategy is overriden to be an empty method. This might not be a major issue as the bounded lifetime (usually 5 mins) of JWT expiry is to reduce the window of a compromised token being used. Since the authenticated connection is established within the token validity, it could be uncessary to disconnect the connection after the JWT expires. However, it is still possible for a compromised token to be used within the short-lived validity to established a long-lived Socket.io connection.
+
+To support multiple Issuer.

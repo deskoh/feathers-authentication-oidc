@@ -16,17 +16,19 @@ export class OidcStrategy extends JWTStrategy {
       'entity', 'entityId', 'service', 'header', 'schemes', 'issuer', 'audience'
     ];
 
+    debug(this.configuration);
     for (const key of Object.keys(this.configuration)) {
       if (!allowedKeys.includes(key)) {
         throw new Error(`Invalid OidcStrategy option 'authentication.${this.name}.${key}'. Did you mean to set it in 'authentication'?`);
       }
     }
     this.verifier = new Verifier(this.configuration);
-    debug(this.configuration);
   }
 
   async handleConnection(event: ConnectionEvent, connection: any, authResult?: AuthenticationResult): Promise<void> {
     const { strategy } = authResult?.authentication || {};
+
+    const isValidLogout = event === 'logout' && strategy === this.name;
 
     // Add authentication info only when using current strategy to allow concurrent usage with JwtStrategy.
     if (event === 'login' && strategy === this.name) {
@@ -35,9 +37,8 @@ export class OidcStrategy extends JWTStrategy {
         strategy: this.name,
         accessToken: authResult?.accessToken,
       };
-    } else if (event === 'disconnect') {
+    } else if (isValidLogout || event === 'disconnect') {
       const { entity } = this.configuration;
-
       delete connection[entity];
       delete connection.authentication;
     }
@@ -73,6 +74,9 @@ export class OidcStrategy extends JWTStrategy {
     const query = await this.getEntityQuery(decodedJwt);
 
     debug('findEntity with query', query);
+    if (!this.entityService) {
+      throw new NotAuthenticated(`Could not find entity service`);
+    }
 
     const result = await this.entityService.find({
       ...params,

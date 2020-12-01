@@ -120,9 +120,17 @@ export default class Verifier {
 
   private async verifyToken(header: TokenHeader, token: string): Promise<Token> {
     const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+    const { issuer } = this.jwtVerifyOptions;
+
+    const isIssuerValid = (typeof issuer === 'string' && payload.iss === issuer) ||
+      (Array.isArray(issuer) && issuer.indexOf(payload.iss) !== -1);
+
+    if (!isIssuerValid) {
+      throw new Error(`jwt issuer invalid. expected: ${issuer}`);
+    }
+
     const key = await this.getPublicKey(payload.iss, header.kid);
     const decodedJwt = await verifyJwt(token, key, this.jwtVerifyOptions) as AccessToken;
-
     return decodedJwt;
   }
 
