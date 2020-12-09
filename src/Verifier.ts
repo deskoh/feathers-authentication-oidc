@@ -64,8 +64,7 @@ const verifyJwt = promisify(verify.bind(jsonwebtoken));
 
 export default class Verifier {
   private jwtVerifyOptions: VerifyOptions;
-  private jwkClient: JwksClient.JwksClient | null = null;
-  private getSigningKey: ((kid: string) => Promise<JwksClient.SigningKey>) | undefined;
+  private jwkClients: Record<string, JwksClient.JwksClient> = {};
 
   constructor(jwtVerifyOptions: VerifyOptions) {
     const { issuer } = jwtVerifyOptions;
@@ -85,24 +84,27 @@ export default class Verifier {
     return jwks_uri;
   }
 
-  private getPublicKey = async (issuer: string, kid: string): Promise<string> => {
-    try {
-      if (this.jwkClient === null || !this.getSigningKey) {
+  private getJwkClient = async (issuer: string): Promise<JwksClient.JwksClient> => {
+    let jwkClient = this.jwkClients[issuer];
+    if (jwkClient === undefined) {
+      try {
         const jwksUri = await this.getJwksUrl(issuer);
-        debug('getting JWKS URL:', jwksUri);
-        this.jwkClient = JwksClient({
+        jwkClient = JwksClient({
           strictSsl: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
           jwksUri,
           cacheMaxAge: 30 * 60 * 1000, // 30 mins
         });
-        this.getSigningKey = promisify(this.jwkClient.getSigningKey)
-          .bind(this.jwkClient.getSigningKey);
+      } catch (error) {
+        throw new Error(`unable to get jwk uri: ${error.message}`);
       }
-    } catch (error) {
-      throw new Error(`unable to get jwks uri: ${error.message}`);
+      this.jwkClients[issuer] = jwkClient;
     }
+    return jwkClient;
+  }
 
-    const key = await this.getSigningKey(kid);
+  private getPublicKey = async (issuer: string, kid: string): Promise<string> => {
+    const jwkClient = await this.getJwkClient(issuer);
+    const key = await jwkClient.getSigningKeyAsync(kid);
     if (key === null) {
       throw new Error('unable to get keys or unknown kid');
     }
