@@ -15,6 +15,8 @@ export default (options?: MockOidcProviderOptions): Express => {
   };
 
   const app = express();
+  const jwtSet = jwt();
+  app.set('jwt', jwtSet);
 
   const iss = `http://localhost:${opts.port}${opts.path}`;
   const jwksPath = '/.well-known/jwks.json';
@@ -29,7 +31,7 @@ export default (options?: MockOidcProviderOptions): Express => {
   app.get(jwksPath, (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
     const config = {
-      keys: [jwt.jwk]
+      keys: [jwtSet.jwk]
     };
     res.end(JSON.stringify(config, null, 2));
   });

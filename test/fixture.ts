@@ -10,7 +10,18 @@ export class TestOidcStrategy extends OidcStrategy {
 }
 
 const port = 3000;
+
 const mockProviderPath = '/mockOP';
+export const oidcProvider = provider({
+  port,
+  path: mockProviderPath,
+});
+
+const mockProviderPath2 = '/mockOP2';
+export const oidcProvider2 = provider({
+  port,
+  path: mockProviderPath2,
+});
 
 interface AppOptions {
   strategyName: string;
@@ -28,16 +39,24 @@ export const createApp = (opts: AppOptions) => {
     service: 'users',
     // authStrategies: [opts.strategyName, 'jwt'],
     // parseStrategies: ['jwt'],
-    authStrategies: [opts.strategyName],
+    authStrategies: [opts.strategyName, `${opts.strategyName}2`],
     [opts.strategyName]: {
       issuer: `http://localhost:${port}${mockProviderPath}`,
       audience: ["client1", "client2"],
     },
+    [`${opts.strategyName}2`]: {
+      issuer: [
+        `http://localhost:${port}${mockProviderPath}`,
+        `http://localhost:${port}${mockProviderPath2}`,
+      ],
+      audience: ["client1", "client2"],
+    }
   });
 
   const auth = new AuthenticationService(app);
   // auth.register('jwt', new JWTStrategy());
   auth.register(opts.strategyName, new TestOidcStrategy());
+  auth.register(`${opts.strategyName}2`, new TestOidcStrategy());
 
   app.use('/authentication', auth);
   app.use('/users', memory());
@@ -56,11 +75,8 @@ export const createApp = (opts: AppOptions) => {
     before: { all: [ hooks.authenticate(opts.strategyName, 'jwt') ] }
   });
 
-
-  app.use(mockProviderPath, provider({
-    port,
-    path: mockProviderPath,
-  }));
+  app.use(mockProviderPath, oidcProvider);
+  app.use(mockProviderPath2, oidcProvider2);
 
   return app;
 }

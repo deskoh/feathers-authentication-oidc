@@ -5,7 +5,7 @@ import { AuthenticationService } from '@feathersjs/authentication';
 import express from '@feathersjs/express';
 
 import { createApp, TestOidcStrategy } from './fixture';
-import { jwt } from './mockOidcProvider';
+import { oidcProvider, oidcProvider2 } from './fixture';
 
 let server: http.Server;
 let app: express.Application;
@@ -13,6 +13,8 @@ let validPayload: any;
 let strategy: TestOidcStrategy;
 
 const strategyName = 'oidc-test';
+const jwt = oidcProvider.get('jwt');
+const jwt2 = oidcProvider2.get('jwt');
 
 beforeEach((done) => {
   app = createApp({
@@ -113,6 +115,32 @@ describe('strategy', () => {
       name: 'TokenExpiredError',
       message: 'jwt expired'
     });
+  });
+
+  it('can support multiple issuers', async () => {
+    const authService: AuthenticationService = app.service('authentication');
+    const strategyName2 = `${strategyName}2`;
+    const [ strategy ] = authService.getStrategies(strategyName2) as TestOidcStrategy[];
+
+    // Authenticate using JWT from 1st issuer
+    let accessToken = jwt.createToken(validPayload, 10000);
+    let result = await strategy.authenticate({accessToken}, {});
+
+    assert.equal(result.accessToken, accessToken);
+    assert.equal(result.authentication.strategy, strategyName2);
+    assert.equal(result.user[`${strategyName2}Id`], validPayload.sub);
+
+    // Authenticate using JWT from 2nd issuer
+    const validPayload2 = {
+      ...validPayload,
+      iss: `${strategy.configuration.issuer[1]}`,
+    }
+    accessToken = jwt2.createToken(validPayload2, 10000);
+    result = await strategy.authenticate({accessToken}, {});
+
+    assert.equal(result.accessToken, accessToken);
+    assert.equal(result.authentication.strategy, strategyName2);
+    assert.equal(result.user[`${strategyName2}Id`], validPayload.sub);
   });
 });
 
