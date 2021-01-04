@@ -215,7 +215,7 @@ To use JWT in HTTP headers for authentication, you can either
 Configured with the strategies in the authentication hooks.
 
 ```ts
-import { authenticate  } from '@feathersjs/authentication';
+import { authenticate } from '@feathersjs/authentication';
 
 app.service('messages').hooks({
   before: {
@@ -226,7 +226,20 @@ app.service('messages').hooks({
 });
 ```
 
-TODO: Handling Socket.io authentication event and disconnect when JWT expires. Current workaround: JwtStrategy need to override `handleConnection`
+For realtime connections, `handleConnection` of all strategy will be called to handle authentication. If `JwtStrategy` is also used, `handleConnection` needs to be overidden for the authentication to be mutually exclusive.
+
+```ts
+import { OidcStrategy } from 'feathers-authentication-oidc';
+
+// Assuming JwtStrategy is configured first in configuration.authentication.authStrategies.
+class MyOidcStrategy extends OidcStrategy {
+  async handleConnection(event, connection, authResult) {
+    if (event === 'login' && connection.authentication) {
+      return;
+    }
+  }
+}
+```
 
 ## Custom CAs
 
