@@ -56,6 +56,10 @@ Example configuration.
 }
 ```
 
+## Obtaining JWT from OIDC Provider
+
+The public client (e.g. Frontend / Single-Page-Application) is responsible to obtain the JWT using Authentication Code Flow (with PKCE according to Best Current Practice). FeathersJS server will not be involved in the process. A general purpose OIDC library that can be used is [oidc-client](https://www.npmjs.com/package/oidc-client). Example of OIDC provider (OP) includes [Keycloak](https://www.keycloak.org/). After obtaining the JWT from the OP, the OP-issued JWT will be used as access token for authenticated calls to FeatherJS server.
+
 ## Authentication
 
 ### Using HTTP Headers
@@ -77,11 +81,13 @@ Authorization: JWT <your JWT>
 {
   "strategy": "oidc",
   "accessToken": "ey....",
-  // Optional: If true, entity configured in Authentication service will be updated.
-  // Usually set to true only during login, else each authentication could emit user patch event.
+  // Optional: If true, entity configured in Authentication service will be updated using `patch`.
+  // Usually set to true only during first login to update user profile if entity service is configured.
   "updateEntity": true
 }
 ```
+
+> When `updateEntity` is set to true, the patch will be a internal call (i.e. `params.provider` will be undefined) and user patch event will be emitted. As the strategy will run whenever authenticate hook is used, `updateEntity` is set to `false` by default to avoid unccessary to patch the entity service each time an authenticated service is called.
 
 ### Using [Feathers Client](https://docs.feathersjs.com/api/authentication/client.html)
 
@@ -111,6 +117,8 @@ client.authenticate({
 ```
 
 ## Authentication Hooks
+
+The [`authenticate`](https://docs.feathersjs.com/api/authentication/hook.html) hook will cause the strategy to run everytime even though it is authenticating using `socket.io` realtime connection. This will result in lookup in entity service ([if configured](#stateless-jwt)) to populate `params.user` with the latest user data.
 
 ```ts
 import { authenticate  } from '@feathersjs/authentication';
@@ -170,7 +178,7 @@ export default (app: Application) => {
 
 See Feathers documentation: [Customizing the payload](https://docs.feathersjs.com/cookbook/authentication/stateless.html#customizing-the-payload)
 
-## Stateless JWT
+## <a name="stateless-jwt"></a>Stateless JWT
 
 As the authentication strategy is inherited from [JWT Stategy](https://docs.feathersjs.com/api/authentication/jwt.html), by default, an authentication using a JWT will result in an entity (usually a user) lookup. It possible to bypass this when all the information necessary can be contained in the token payload. See [Stateless JWT](https://docs.feathersjs.com/cookbook/authentication/stateless.html#stateless-jwt) for more details.
 
@@ -196,9 +204,9 @@ To use JWT in HTTP headers for authentication, you can either
 
 1. Configure unique [`schemes`](https://docs.feathersjs.com/api/authentication/jwt.html#options) for both Strategies or
 
-1. Order the preferred Strategy to be used first in the list of [`authStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) or
+1. Configure [`parseStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy), which uses the value `authStrategies` by default or
 
-1. Configure [`parseStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy), which uses the value `authStrategies` by default.
+1. Order the preferred Strategy to be used first in the list of [`authStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy):
 
 ```jsonc
 {
@@ -212,7 +220,7 @@ To use JWT in HTTP headers for authentication, you can either
 }
 ```
 
-Configured with the strategies in the authentication hooks.
+Configure both strategies in the authentication hooks.
 
 ```ts
 import { authenticate } from '@feathersjs/authentication';
@@ -227,6 +235,8 @@ app.service('messages').hooks({
 ```
 
 For realtime connections, `handleConnection` of all strategy will be called to handle authentication. If `JwtStrategy` is also used, `handleConnection` needs to be overidden for the authentication to be mutually exclusive.
+
+Related issue: [#1884](https://github.com/feathersjs/feathers/issues/1884).
 
 ```ts
 import { OidcStrategy } from 'feathers-authentication-oidc';
@@ -247,6 +257,4 @@ If the issuer uses a custom CA for HTTPS endpoint, set [`NODE_EXTRA_CA_CERTS`](h
 
 ## Known Issues
 
-Socket.io connection that is [authenticated](https://docs.feathersjs.com/api/client/socketio.html#authentication) is not disconnected when JWT expires as `handleConnection` method of the Strategy is overriden to be an empty method. This might not be a major issue as the bounded lifetime (usually 5 mins) of JWT expiry is to reduce the window of a compromised token being used. Since the authenticated connection is established within the token validity, it could be uncessary to disconnect the connection after the JWT expires. However, it is still possible for a compromised token to be used within the short-lived validity to established a long-lived Socket.io connection.
-
-To support multiple Issuer.
+Socket.io connection that is [authenticated](https://docs.feathersjs.com/api/client/socketio.html#authentication) using the OIDC stategy will not be disconnected when the JWT expires as the `handleConnection` method of the Strategy is overriden to be an empty method. This might not be a major issue as the bounded lifetime (usually 5 mins) of JWT expiry is to reduce the window of a compromised token being used. Since the authenticated connection is established within the token validity, it could be uncessary to disconnect the connection after the JWT expires. However, it is still possible for a compromised token to be used within the short-lived validity to establish a long-lived Socket.io connection.
