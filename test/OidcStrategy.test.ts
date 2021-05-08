@@ -67,6 +67,7 @@ describe('strategy', () => {
     accessToken = jwt.createToken({
       ...validPayload,
       email: 'deskoh@example.org',
+      givenName: 'deskoh',
     }, 10000);
 
     authResult = await strategy.authenticate({accessToken}, {});
@@ -80,6 +81,7 @@ describe('strategy', () => {
     assert.deepEqual(authResult.user, {
       ...user,
       email: 'deskoh@example.org',
+      givenName: 'deskoh',
     })
   });
 
