@@ -1,6 +1,6 @@
 {
   "name": "feathers-authentication-oidc",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "OIDC Authentication for FeathersJS.",
   "main": "lib/",
   "scripts": {
@@ -10,10 +10,7 @@
     "mocha": "mocha --recursive test/**/*.test.ts --exit",
     "mocha:watch": "mocha --watch --recursive test/**/*.test.ts"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/deskoh/feathers-authentication-oidc.git"
-  },
+  "repository": "github:deskoh/feathers-authentication-oidc.git",
   "keywords": [
     "feathers",
     "feathersjs",
