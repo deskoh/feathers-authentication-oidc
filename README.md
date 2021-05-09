@@ -49,7 +49,9 @@ Example configuration.
       // (by appending /.well-known/openid-configuration)
       "issuer": "http://keycloak.127.0.0.1.nip.io:8080/auth/realms/dev",
       // Optional field to validate `aud`  in JWT field (usually OIDC client ID)
-      "audience": ["spa-client1", "spa-client2"]
+      "audience": ["spa-client1", "spa-client2"],
+      // Optional: Additional fields from JWT to be populated to entity.
+      "additionalFields": ["givenName"],
     },
     //...
   }

@@ -13,7 +13,7 @@ export class OidcStrategy extends JWTStrategy {
   // Called when strategy is registered
   verifyConfiguration(): void {
     const allowedKeys = [
-      'entity', 'entityId', 'service', 'header', 'schemes', 'issuer', 'audience'
+      'entity', 'entityId', 'service', 'header', 'schemes', 'issuer', 'audience', 'additionalFields'
     ];
 
     debug(this.configuration);
@@ -64,10 +64,17 @@ export class OidcStrategy extends JWTStrategy {
    */
   getEntityData(decodedJwt: any, _params: Params): any {
     debug('getEntityData decodedJwt', decodedJwt);
-    return {
+    let entity = {
       [`${this.name}Id`]: decodedJwt.sub || decodedJwt.id,
       email: decodedJwt.email,
     };
+    const { additionalFields } = this.configuration;
+    if (additionalFields) {
+      for (const field of additionalFields) {
+        entity[field] = decodedJwt[field];
+      }
+    }
+    return entity;
   }
 
   async findEntity(decodedJwt: any, params: Params): Promise<any> {

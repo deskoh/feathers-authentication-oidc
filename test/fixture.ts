@@ -43,6 +43,7 @@ export const createApp = (opts: AppOptions) => {
     [opts.strategyName]: {
       issuer: `http://localhost:${port}${mockProviderPath}`,
       audience: ["client1", "client2"],
+      additionalFields: ["givenName"],
     },
     [`${opts.strategyName}2`]: {
       issuer: [
