@@ -222,7 +222,7 @@ To use JWT in HTTP headers for authentication, you can either
       "oidc": {
         // ...
         // Strategy to parse and decode JWT issuer and ignore value if issuer is not whitelisted
-        "parseIssuer": false
+        "parseIssuer": true
       }
     }
     ```
