@@ -51,6 +51,7 @@ export const createApp = (opts: AppOptions) => {
         `http://localhost:${port}${mockProviderPath2}`,
       ],
       audience: ["client1", "client2"],
+      parseIssuer: true,
     }
   });
 

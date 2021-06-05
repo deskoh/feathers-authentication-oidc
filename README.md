@@ -7,7 +7,7 @@
 
 The [Best Current Practice (BCP) for Browser-Based Apps](https://tools.ietf.org/html/draft-ietf-oauth-browser-based-apps-07) (e.g. Single-Page-Applications / SPA) recommends using Authorization Code Flow with PKCE. The SPA will act as a public OAuth Client to access protected resource (Feathers services) using JWT (ID Token as per OIDC specifications or Access Token if it also a JWT) issued by OIDC Provider. This differs from  the built-in [OAuthStrategy](https://docs.feathersjs.com/api/authentication/oauth.html#oauthstrategy) where Feathers acts as a server-side confidential client.
 
-> IMPORTANT: It is assumed that this strategy is not used together with Feathers built-in JwtStrategy. See the [caveats](#usage-with-jwtstrategy) if both strategies are to be used together.
+> IMPORTANT: See the [caveats](#usage-with-feathers-built-in-jwtstrategy) if this strategy is used together with Feathers built-in JwtStrategy
 
 ## Installation
 
@@ -52,6 +52,8 @@ Example configuration.
       "audience": ["spa-client1", "spa-client2"],
       // Optional: Additional fields from JWT to be populated to entity.
       "additionalFields": ["givenName"],
+      // Optional: Set to true if built-in JwtStrategy is used to using same header / scheme (see below)
+      "parseIssuer": false
     },
     //...
   }
@@ -68,7 +70,7 @@ The public client (e.g. Frontend / Single-Page-Application) is responsible to ob
 
 See [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#options) to configure passing ot JWT through the HTTP headers.
 
-> If Feathers built-in [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) is also configured, see [below](#usage-with-jwtstrategy) for correct configuration.
+> If Feathers built-in [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) is also configured, see [below](#usage-with-feathers-built-in-jwtstrategy) for correct configuration.
 
 ```txt
 Authorization: <your JWT>
@@ -120,7 +122,7 @@ client.authenticate({
 
 ## Authentication Hooks
 
-The [`authenticate`](https://docs.feathersjs.com/api/authentication/hook.html) hook will cause the strategy to run everytime even though it is authenticating using `socket.io` realtime connection. This will result in lookup in entity service ([if configured](#stateless-jwt)) to populate `params.user` with the latest user data.
+The [`authenticate`](https://docs.feathersjs.com/api/authentication/hook.html) hook will cause the strategy to run everytime even though it is authenticating using `socket.io` realtime connection. This will result in lookup in entity service (populate `params.user` with the latest user data.
 
 ```ts
 import { authenticate  } from '@feathersjs/authentication';
@@ -180,11 +182,11 @@ export default (app: Application) => {
 
 See Feathers documentation: [Customizing the payload](https://docs.feathersjs.com/cookbook/authentication/stateless.html#customizing-the-payload)
 
-## <a name="stateless-jwt"></a>Stateless JWT
+## Stateless JWT
 
-As the authentication strategy is inherited from [JWT Stategy](https://docs.feathersjs.com/api/authentication/jwt.html), by default, an authentication using a JWT will result in an entity (usually a user) lookup. It possible to bypass this when all the information necessary can be contained in the token payload. See [Stateless JWT](https://docs.feathersjs.com/cookbook/authentication/stateless.html#stateless-jwt) for more details.
+As the authentication strategy is inherited from [JWT Stategy](https://docs.feathersjs.com/api/authentication/jwt.html), by default, an authentication using a JWT will result in an entity (usually a user) lookup. It possible to bypass this when all the information necessary can be contained in the token payload. See [Stateless JWT](https://docs.feathersjs.commore details.
 
-## <a name="usage-with-jwtstrategy"></a> Usage with Feathers built-in JwtStrategy
+## Usage with Feathers built-in JwtStrategy
 
 Register both strategies using different names.
 
@@ -206,35 +208,38 @@ To use JWT in HTTP headers for authentication, you can either
 
 1. Configure unique [`schemes`](https://docs.feathersjs.com/api/authentication/jwt.html#options) for both Strategies or
 
-1. Configure [`parseStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy), which uses the value `authStrategies` by default or
+1. Order the preferred Strategy to be used first in the list of [`authStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) or [`parseStrategies`](https://docs.feathersjs.com/api/authentication/service.html#to-authenticate-an-external-request):
 
-1. Order the preferred Strategy to be used first in the list of [`authStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy):
+    ```jsonc
+    {
+      "authentication": {
+        // Secret used to sign and verify Feathers issued JWT
+        "secret": "...",
+        // Use `oidc` strategy FIRST when authenticating using JWT in HTTP headers
+        "authStrategies": ["oidc", "jwt"],
+        //...
+      },
+      "oidc": {
+        // ...
+        // Strategy to parse and decode JWT issuer and ignore value if issuer is not whitelisted
+        "parseIssuer": false
+      }
+    }
+    ```
 
-```jsonc
-{
-  "authentication": {
-    // Secret used to sign and verify Feathers issued JWT
-    "secret": "...",
-    // Use `oidc` strategy when authenticating using JWT in HTTP headers
-    "authStrategies": ["oidc", "jwt"],
-    //...
-  }
-}
-```
+    Configure both strategies in the authentication hooks.
 
-Configure both strategies in the authentication hooks.
+    ```ts
+    import { authenticate } from '@feathersjs/authentication';
 
-```ts
-import { authenticate } from '@feathersjs/authentication';
-
-app.service('messages').hooks({
-  before: {
-    // `oidc` strategy can be used with `jwt` strategy
-    find: [ authenticate('jwt', 'oidc') ],
-    // ...
-  }
-});
-```
+    app.service('messages').hooks({
+      before: {
+        // `oidc` strategy can be used with `jwt` strategy (order not important)
+        find: [ authenticate('jwt', 'oidc') ],
+        // ...
+      }
+    });
+    ```
 
 For realtime connections, `handleConnection` of all strategy will be called to handle authentication. If `JwtStrategy` is also used, `handleConnection` needs to be overidden for the authentication to be mutually exclusive.
 

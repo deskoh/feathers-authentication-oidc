@@ -261,31 +261,23 @@ describe('with authenticate hook', () => {
   });
 });
 
-describe('parse', () => {
+describe('parseIssuer', () => {
   const res = {} as ServerResponse;
+  const payload = { ...validPayload, iss: 'http://localhost' };
 
-  it('returns null when header not set', async () => {
-    const req = {};
-    const result = await app.service('authentication').parse(req, res, strategyName);
-    assert.strictEqual(result, null);
-  });
-
-  it('parses plain Authorization header', async () => {
-    const accessToken = jwt.createToken(validPayload, 10000);
+  it('parseIssuer enabled: returns null when issuer is incorrect', async () => {
+    const accessToken = jwt.createToken(payload, 10000);
     const req = {
       headers: { authorization: accessToken },
     };
 
-    const result = await app.service('authentication').parse(req, res, strategyName);
+    const result = await app.service('authentication').parse(req, res, `${strategyName}2`);
 
-    assert.deepStrictEqual(result, {
-      strategy: strategyName,
-      accessToken
-    });
+    assert.strictEqual(result, null);
   });
 
-  it('parses Authorization header with Bearer scheme', async () => {
-    const accessToken = jwt.createToken(validPayload, 10000);
+  it('parseIssuer disabled: parses Authorization header when issuer is incorrect', async () => {
+    const accessToken = jwt.createToken(payload, 10000);
     const req = {
       headers: {authorization: ` Bearer ${accessToken}` },
     };
@@ -296,26 +288,5 @@ describe('parse', () => {
       strategy: strategyName,
       accessToken
     });
-  });
-
-  it('return null when scheme does not match', async () => {
-    const accessToken = jwt.createToken(validPayload, 10000);
-    const req = {
-      headers: { authorization: ` Basic ${accessToken}` }
-    };
-
-    const result = await app.service('authentication').parse(req, res, strategyName);
-    assert.equal(result, null);
-  });
-
-  it('return null when strategy is not correct', async () => {
-    const accessToken = jwt.createToken(validPayload, 10000);
-    const req = {
-      headers: { authorization: accessToken },
-    };
-
-    const result = await app.service('authentication').parse(req, res, 'jwt');
-
-    assert.equal(result, null);
   });
 });

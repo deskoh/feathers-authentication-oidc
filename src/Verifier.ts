@@ -125,7 +125,7 @@ export default class Verifier {
     const { issuer } = this.jwtVerifyOptions;
 
     const isIssuerValid = (typeof issuer === 'string' && payload.iss === issuer) ||
-      (Array.isArray(issuer) && issuer.indexOf(payload.iss) !== -1);
+      (Array.isArray(issuer) && issuer.includes(payload.iss));
 
     if (!isIssuerValid) {
       throw new Error(`jwt issuer invalid. expected: ${issuer}`);

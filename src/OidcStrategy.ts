@@ -1,3 +1,4 @@
+import { IncomingMessage } from 'http';
 import { AuthenticationResult, JWTStrategy, ConnectionEvent } from '@feathersjs/authentication';
 import { NotAuthenticated } from '@feathersjs/errors';
 import { Params } from '@feathersjs/feathers';
@@ -13,7 +14,7 @@ export class OidcStrategy extends JWTStrategy {
   // Called when strategy is registered
   verifyConfiguration(): void {
     const allowedKeys = [
-      'entity', 'entityId', 'service', 'header', 'schemes', 'issuer', 'audience', 'additionalFields'
+      'entity', 'entityId', 'service', 'header', 'schemes', 'issuer', 'audience', 'additionalFields', 'parseIssuer',
     ];
 
     debug(this.configuration);
@@ -23,6 +24,33 @@ export class OidcStrategy extends JWTStrategy {
       }
     }
     this.verifier = new Verifier(this.configuration);
+  }
+
+  // Override to allow different JwtStrategies to use same Header
+  // @ts-ignore
+  async parse(req: IncomingMessage): Promise<{
+    strategy: string;
+    accessToken: string;
+  } | null> {
+    const { parseIssuer } = this.configuration;
+    const strategy = await super.parse(req);
+    if (!parseIssuer || strategy === null) return strategy;
+
+    // Check if accessToken is issued by this server
+    const { accessToken = '' } = strategy;
+    const [, payload = undefined] = accessToken.split('.');
+    if (!payload) return strategy;
+
+    const { iss } = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+
+    const { issuer: allowedIssuer } = this.configuration;
+    const isIssuerValid = (typeof allowedIssuer === 'string' && iss === allowedIssuer) ||
+      (Array.isArray(allowedIssuer) && allowedIssuer.includes(iss));
+    if (isIssuerValid) return strategy;
+
+    // Ignore access token to fallback to other JwtStrategy
+    debug('ignoring parsed header value');
+    return null;
   }
 
   async handleConnection(event: ConnectionEvent, connection: any, authResult?: AuthenticationResult): Promise<void> {
