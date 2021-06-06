@@ -45,7 +45,7 @@ Example configuration.
     "entity": user,
     "authStrategies": ["oidc", /* other strategies */],
     "oidc": {
-      // Whitelisted issuers to trust (string or array) and for OIDC discovery
+      // Whitelisted issuers to trust (string or array) for OIDC discovery
       // (by appending /.well-known/openid-configuration)
       "issuer": "http://keycloak.127.0.0.1.nip.io:8080/auth/realms/dev",
       // Optional field to validate `aud`  in JWT field (usually OIDC client ID)
