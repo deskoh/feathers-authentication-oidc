@@ -261,9 +261,64 @@ describe('with authenticate hook', () => {
   });
 });
 
-describe('parseIssuer', () => {
+describe('parse', () => {
   const res = {} as ServerResponse;
   const payload = { ...validPayload, iss: 'http://localhost' };
+
+  it('returns null when header not set', async () => {
+    const req = {};
+    const result = await app.service('authentication').parse(req, res, strategyName);
+    assert.strictEqual(result, null);
+  });
+
+  it('parses plain Authorization header', async () => {
+    const accessToken = jwt.createToken(validPayload, 10000);
+    const req = {
+      headers: { authorization: accessToken },
+    };
+
+    const result = await app.service('authentication').parse(req, res, strategyName);
+
+    assert.deepStrictEqual(result, {
+      strategy: strategyName,
+      accessToken
+    });
+  });
+
+  it('parses Authorization header with Bearer scheme', async () => {
+    const accessToken = jwt.createToken(validPayload, 10000);
+    const req = {
+      headers: {authorization: ` Bearer ${accessToken}` },
+    };
+
+    const result = await app.service('authentication').parse(req, res, strategyName);
+
+    assert.deepEqual(result, {
+      strategy: strategyName,
+      accessToken
+    });
+  });
+
+  it('return null when scheme does not match', async () => {
+    const accessToken = jwt.createToken(validPayload, 10000);
+    const req = {
+      headers: { authorization: ` Basic ${accessToken}` }
+    };
+
+    const result = await app.service('authentication').parse(req, res, strategyName);
+    assert.equal(result, null);
+  });
+
+  it('return null when strategy is not correct', async () => {
+    const accessToken = jwt.createToken(validPayload, 10000);
+    const req = {
+      headers: { authorization: accessToken },
+    };
+
+    const result = await app.service('authentication').parse(req, res, 'jwt');
+
+    assert.equal(result, null);
+  });
 
   it('parseIssuer enabled: returns null when issuer is incorrect', async () => {
     const accessToken = jwt.createToken(payload, 10000);
