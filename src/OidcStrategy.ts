@@ -2,14 +2,34 @@ import { IncomingMessage } from 'http';
 import { AuthenticationResult, JWTStrategy, ConnectionEvent } from '@feathersjs/authentication';
 import { NotAuthenticated } from '@feathersjs/errors';
 import { Params } from '@feathersjs/feathers';
+import { VerifyOptions } from 'jsonwebtoken';
 import Debug from 'debug';
 
 import Verifier, { JWT } from './Verifier';
 
 const debug = Debug('feathers-authentication-oidc/strategy');
 
+interface OidcStrategyOptions extends VerifyOptions {
+  // Inherited from JwtStrategy
+  entity: string,
+  entityId: any,
+  service: any,
+  header: string,
+  schemes: string[],
+  /**
+   * Additional fields from JWT to be populated to entity.
+   */
+  additionalFields?: string[],
+  [key: string]: any,
+}
 export class OidcStrategy extends JWTStrategy {
   private verifier!: Verifier;
+  private entityMapper?: (jwt: any) => any;
+
+  constructor(options?: { entityMapper?: (jwt: any) => any }) {
+    super();
+    this.entityMapper = options?.entityMapper;
+  }
 
   // Called when strategy is registered
   verifyConfiguration(): void {
@@ -23,7 +43,7 @@ export class OidcStrategy extends JWTStrategy {
         throw new Error(`Invalid OidcStrategy option 'authentication.${this.name}.${key}'. Did you mean to set it in 'authentication'?`);
       }
     }
-    this.verifier = new Verifier(this.configuration);
+    this.verifier = new Verifier(this.configuration as OidcStrategyOptions);
   }
 
   // Override to allow different JwtStrategies to use same Header
@@ -96,13 +116,17 @@ export class OidcStrategy extends JWTStrategy {
       [`${this.name}Id`]: decodedJwt.sub || decodedJwt.id,
       email: decodedJwt.email,
     };
-    const { additionalFields } = this.configuration;
+    const { additionalFields } = this.configuration as OidcStrategyOptions;
     if (additionalFields) {
       for (const field of additionalFields) {
         entity[field] = decodedJwt[field];
       }
     }
-    return entity;
+
+    return this.entityMapper ? {
+      entity,
+      ...this.entityMapper(decodedJwt),
+    } : entity;
   }
 
   async findEntity(decodedJwt: any, params: Params): Promise<any> {

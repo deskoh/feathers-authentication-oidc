@@ -52,6 +52,13 @@ export const createApp = (opts: AppOptions) => {
       ],
       audience: ["client1", "client2"],
       parseIssuer: true,
+    },
+    [`${opts.strategyName}-with-mapper`]: {
+      issuer: [
+        `http://localhost:${port}${mockProviderPath}`,
+      ],
+      audience: ["client1", "client2"],
+      parseIssuer: true,
     }
   });
 
@@ -59,6 +66,13 @@ export const createApp = (opts: AppOptions) => {
   // auth.register('jwt', new JWTStrategy());
   auth.register(opts.strategyName, new TestOidcStrategy());
   auth.register(`${opts.strategyName}2`, new TestOidcStrategy());
+  auth.register(`${opts.strategyName}-with-mapper`, new TestOidcStrategy({
+    entityMapper: (jwt) => ({
+      id: jwt.preferred_username,
+      name: `${jwt.firstName} ${jwt.lastName}`,
+      org: 'default',
+    }),
+  }));
 
   app.use('/authentication', auth);
   app.use('/users', memory());

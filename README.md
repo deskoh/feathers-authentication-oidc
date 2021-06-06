@@ -146,9 +146,24 @@ authentication.register('oidc-google', new OidcStrategy() as any);
 authentication.register('oidc-keycloak', new OidcStrategy() as any);
 ```
 
-## OIDC Providers Customization
+## OIDC Providers Customization / Entity Mapper
 
-To support OpenID Provider-specific JWT claims or JWT verification, the `OidcStrategy` class can be extended and registered using another name.
+To support OpenID Provider-specific JWT claims or JWT verification, an `entityMapper` can be provided to populate the `entity` object.
+
+> `entityMapper` has higher precedence than `additionalFields` configuration.
+
+```ts
+const auth = new AuthenticationService(app);
+auth.register('oidc', new OidcStrategy({
+  entityMapper: (jwt) => ({
+    id: jwt.preferred_username,
+    name: `${jwt.firstName} ${jwt.lastName}`,
+    org: 'default',
+  }),
+}));
+```
+
+Alternatively, the `OidcStrategy` class can be extended.
 
 ```ts
 import { Application } from '@feathersjs/feathers';

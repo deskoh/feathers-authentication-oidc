@@ -11,6 +11,7 @@ let server: http.Server;
 let app: express.Application;
 let validPayload: any;
 let strategy: TestOidcStrategy;
+let strategyWithEntityMapper: TestOidcStrategy;
 
 const strategyName = 'oidc-test';
 const jwt = oidcProvider.get('jwt');
@@ -24,6 +25,7 @@ beforeEach((done) => {
 
   const authService: AuthenticationService = app.service('authentication');
   [ strategy ] = authService.getStrategies(strategyName) as TestOidcStrategy[];
+  [ strategyWithEntityMapper ] = authService.getStrategies(`${strategyName}-with-mapper`) as TestOidcStrategy[];
 
   validPayload = {
     sub: '999',
@@ -82,6 +84,70 @@ describe('strategy', () => {
       ...user,
       email: 'deskoh@example.org',
       givenName: 'deskoh',
+    })
+  });
+
+  it('can authenticate and update entity with default values', async () => {
+    let accessToken = jwt.createToken(validPayload, 10000);
+
+    app.get('authentication')[strategyName].additionalFields = [
+      // Field present in JWT
+      'givenName',
+      // Field not present in JWT
+      'unknown_field',
+    ];
+
+    let authResult = await strategy.authenticate({accessToken}, {});
+    const user = authResult.user;
+
+    // Add email to token
+    accessToken = jwt.createToken({
+      ...validPayload,
+      email: 'deskoh@example.org',
+      givenName: 'deskoh',
+    }, 10000);
+
+    authResult = await strategy.authenticate({accessToken}, {});
+    assert.deepEqual(authResult.user, user)
+
+    // Update entity
+    authResult = await strategy.authenticate({
+      accessToken,
+      updateEntity: true,
+    }, {});
+
+    assert.deepEqual(authResult.user, {
+      ...user,
+      email: 'deskoh@example.org',
+      givenName: 'deskoh',
+    })
+  });
+
+  it('entityMapper works', async () => {
+    let accessToken = jwt.createToken(validPayload, 10000);
+
+    let authResult = await strategyWithEntityMapper.authenticate({accessToken}, {});
+    const user = authResult.user;
+
+    // Add email to token
+    accessToken = jwt.createToken({
+      ...validPayload,
+      firstName: 'des',
+      lastName: 'koh',
+      preferred_username: 'deskoh',
+    }, 10000);
+
+    // Update entity
+    authResult = await strategyWithEntityMapper.authenticate({
+      accessToken,
+      updateEntity: true,
+    }, {});
+
+    assert.deepEqual(authResult.user, {
+      ...user,
+      id: 'deskoh',
+      name: `des koh`,
+      org: 'default',
     })
   });
 
