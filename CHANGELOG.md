@@ -1,0 +1,10 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [0.4.1](https://github.com/deskoh/feathers-authentication-oidc/compare/v0.4.0...v0.4.1) (2021-06-07)
+
+
+### Bug Fixes
+
+* Typings for strictNullChecks compatibility ([23c0dbb](https://github.com/deskoh/feathers-authentication-oidc/commit/23c0dbbfdf4156d67a2e62c3d7921e6fa15c0985))
