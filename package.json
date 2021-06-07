@@ -4,7 +4,7 @@
   "description": "OIDC Authentication for FeathersJS.",
   "main": "lib/",
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc --strict false -p .",
     "build:watch": "tsc -p . --watch",
     "test": "npm run build && npm run mocha",
     "mocha": "mocha --recursive test/**/*.test.ts --exit",

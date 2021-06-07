@@ -27,11 +27,7 @@ export class OidcStrategy extends JWTStrategy {
   }
 
   // Override to allow different JwtStrategies to use same Header
-  // @ts-ignore
-  async parse(req: IncomingMessage): Promise<{
-    strategy: string;
-    accessToken: string;
-  } | null> {
+  async parse(req: IncomingMessage) {
     const { parseIssuer } = this.configuration;
     const strategy = await super.parse(req);
     if (!parseIssuer || strategy === null) return strategy;
