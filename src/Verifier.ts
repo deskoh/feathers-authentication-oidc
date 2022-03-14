@@ -90,11 +90,10 @@ export default class Verifier {
       try {
         const jwksUri = await this.getJwksUrl(issuer);
         jwkClient = JwksClient({
-          strictSsl: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
           jwksUri,
           cacheMaxAge: 30 * 60 * 1000, // 30 mins
         });
-      } catch (error) {
+      } catch (error: any) {
         throw new Error(`unable to get jwk uri: ${error.message}`);
       }
       this.jwkClients[issuer] = jwkClient;
@@ -104,7 +103,7 @@ export default class Verifier {
 
   private getPublicKey = async (issuer: string, kid: string): Promise<string> => {
     const jwkClient = await this.getJwkClient(issuer);
-    const key = await jwkClient.getSigningKeyAsync(kid);
+    const key = await jwkClient.getSigningKey(kid);
     if (key === null) {
       throw new Error('unable to get keys or unknown kid');
     }
