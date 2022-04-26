@@ -8,7 +8,8 @@
     "build:watch": "tsc -p . --watch",
     "test": "npm run build && npm run mocha",
     "mocha": "mocha --recursive test/**/*.test.ts --exit",
-    "mocha:watch": "mocha --watch --recursive test/**/*.test.ts"
+    "mocha:watch": "mocha --watch --recursive test/**/*.test.ts",
+    "release": "rm -rf lib && npm run build && standard-version release"
   },
   "repository": "github:deskoh/feathers-authentication-oidc.git",
   "keywords": [
