@@ -1,11 +1,11 @@
 # Feathers Authentication OIDC
 
-[![Build Status](https://img.shields.io/github/workflow/status/deskoh/feathers-authentication-oidc/Node%20CI)](https://github.com/deskoh/feathers-authentication-oidc/actions?query=workflow%3ANode+CI)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/deskoh/feathers-authentication-oidc/nodejs.yml?branch=main)](https://github.com/deskoh/feathers-authentication-oidc/actions?query=workflow%3ANode+CI)
 [![Build Size](https://img.shields.io/bundlephobia/min/feathers-authentication-oidc?label=bundle%20size)](https://bundlephobia.com/result?p=feathers-authentication-oidc)
 
 [Feathers](https://feathersjs.com/) OpenID Connect authentication strategy for using JWT issued by OIDC Providers. The authentication strategy is inherits from [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) and borrows heavily from [OAuthStrategy](https://docs.feathersjs.com/api/authentication/oauth.html#oauthstrategy).
 
-The [Best Current Practice (BCP) for Browser-Based Apps](https://tools.ietf.org/html/draft-ietf-oauth-browser-based-apps-07) (e.g. Single-Page-Applications / SPA) recommends using Authorization Code Flow with PKCE. The SPA will act as a public OAuth Client to access protected resource (Feathers services) using JWT (ID Token as per OIDC specifications or Access Token if it also a JWT) issued by OIDC Provider. This differs from  the built-in [OAuthStrategy](https://docs.feathersjs.com/api/authentication/oauth.html#oauthstrategy) where Feathers acts as a server-side confidential client.
+The [Best Current Practice (BCP) for Browser-Based Apps](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-browser-based-apps) (e.g. Single-Page-Applications / SPA) recommends using Authorization Code Flow with PKCE. The SPA will act as a public OAuth Client to access protected resource (Feathers services) using JWT (ID Token as per OIDC specifications or Access Token if it also a JWT) issued by OIDC Provider. This differs from  the built-in [OAuthStrategy](https://docs.feathersjs.com/api/authentication/oauth.html#oauthstrategy) where Feathers acts as a server-side confidential client.
 
 > IMPORTANT: See the [caveats](#usage-with-feathers-built-in-jwtstrategy) if this strategy is used together with Feathers built-in JwtStrategy
 
