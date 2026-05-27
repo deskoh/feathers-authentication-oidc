@@ -1,6 +1,6 @@
 {
   "timeout": 20000,
-  "require": [ "ts-node/register/transpile-only", "source-map-support/register" ],
+  "import": "tsx",
   "reporter": "Dot",
   "diff": true,
   "watch-files": ["test/**/*.ts", "lib/**/*.js"]
