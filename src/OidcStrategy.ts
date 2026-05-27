@@ -1,5 +1,5 @@
 import { IncomingMessage } from 'http';
-import { AuthenticationResult, JWTStrategy, ConnectionEvent } from '@feathersjs/authentication';
+import { AuthenticationResult, JWTStrategy, ConnectionEvent, AuthenticationParams } from '@feathersjs/authentication';
 import { NotAuthenticated } from '@feathersjs/errors';
 import { Params } from '@feathersjs/feathers';
 import Debug from 'debug';
@@ -57,10 +57,12 @@ export class OidcStrategy extends JWTStrategy {
     // Add authentication info only when using current strategy to allow concurrent usage with JwtStrategy.
     if (event === 'login' && strategy === this.name) {
       debug('Adding authentication information to connection');
+      const { entity } = this.configuration;
       connection.authentication = {
         strategy: this.name,
         accessToken: authResult?.accessToken,
       };
+      connection[entity] = authResult?.[entity];
     } else if (isValidLogout || event === 'disconnect') {
       const { entity } = this.configuration;
       delete connection[entity];
@@ -69,7 +71,7 @@ export class OidcStrategy extends JWTStrategy {
   }
 
   get entityId(): string {
-    return this.configuration.entityId || this.entityService?.id;
+    return this.configuration.entityId || (this.entityService as any)?.id;
   }
 
   /**
@@ -105,11 +107,12 @@ export class OidcStrategy extends JWTStrategy {
     const query = await this.getEntityQuery(decodedJwt);
 
     debug('findEntity with query', query);
-    if (!this.entityService) {
+    let entityService = this.entityService;
+    if (!entityService) {
       throw new NotAuthenticated(`Could not find entity service`);
     }
 
-    const result = await this.entityService.find({
+    const result = await entityService.find({
       ...params,
       query
     });
@@ -155,7 +158,7 @@ export class OidcStrategy extends JWTStrategy {
     });
   }
 
-  async authenticate(authentication: AuthenticationResult, originalParams: Params): Promise<any> {
+  async authenticate(authentication: AuthenticationResult, params: AuthenticationParams): Promise<any> {
     const { accessToken, updateEntity = false } = authentication;
     const { entity } = this.configuration;
 
@@ -163,7 +166,7 @@ export class OidcStrategy extends JWTStrategy {
       throw new NotAuthenticated('No access token');
     }
 
-    const decodedJwt = await this.verifyJwt(accessToken/*, params.jwt*/);
+    const decodedJwt = await this.verifyJwt(accessToken);
     const result: AuthenticationResult = {
       // Provide accessToken for Feathers authentication to skip JWT creation in `createAccessToken`
       // accessToken also required in auth service create after hook to be added to connection
@@ -178,7 +181,6 @@ export class OidcStrategy extends JWTStrategy {
     }
 
     // Find entity using internal call by removing provider.
-    const { provider, ...params } = originalParams;
     const existingEntity = await this.findEntity(decodedJwt, params);
 
     debug('authenticate with (existing) entity', existingEntity);
@@ -195,7 +197,7 @@ export class OidcStrategy extends JWTStrategy {
 
     return {
       ...result,
-      [entity]: await this.getEntity(authEntity, originalParams),
+      [entity]: await this.getEntity(authEntity, params),
     };
   }
 
@@ -203,7 +205,11 @@ export class OidcStrategy extends JWTStrategy {
     try {
       return this.verifier.verifyJwt(token);
     } catch (error) {
-      throw new NotAuthenticated(error.message, error);
+       if (error instanceof Error) {
+        throw new NotAuthenticated(error.message, error);
+      } else {
+        throw new NotAuthenticated("Unknown error", error);
+      }
     }
   }
 }

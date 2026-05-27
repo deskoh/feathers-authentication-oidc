@@ -7,7 +7,7 @@
     "node": ">= 20.0.0"
   },
   "scripts": {
-    "build": "tsgo --strict false -p .",
+    "build": "tsc --strict false -p .",
     "build:watch": "tsc -p . --watch",
     "test": "npm run build && npm run mocha",
     "mocha": "mocha --recursive test/**/*.test.ts --exit",
@@ -26,24 +26,29 @@
     "url": "https://github.com/deskoh/feathers-authentication-oidc/issues"
   },
   "homepage": "https://github.com/deskoh/feathers-authentication-oidc",
+  "peerDependencies": {
+    "@feathersjs/authentication": "^5.0.46",
+    "@feathersjs/errors": "^5.0.0",
+    "@feathersjs/feathers": "^5.0.0"
+  },
   "devDependencies": {
-    "@feathersjs/authentication": "^4.5.19",
-    "@feathersjs/express": "^4.5.19",
+    "@feathersjs/authentication": "^5.0.46",
+    "@feathersjs/errors": "^5.0.46",
+    "@feathersjs/express": "^5.0.46",
+    "@feathersjs/feathers": "^5.0.46",
+    "@feathersjs/memory": "^5.0.46",
     "@types/debug": "^4.1.13",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mocha": "^10.0.1",
     "@types/node": "^24.12.4",
-    "@typescript/native-preview": "^7.0.0-dev.20260421.2",
-    "crypto": "^1.0.1",
-    "feathers-memory": "^4.1.0",
     "jws": "^4.0.1",
     "mocha": "^11.7.6",
     "pem-jwk": "^2.0.0",
     "source-map-support": "^0.5.21",
-    "tsx": "^4.22.3"
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@feathersjs/errors": "^4.5.19",
     "axios": "^1.16.1",
     "debug": "^4.4.3",
     "jsonwebtoken": "^9.0.3",

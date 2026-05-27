@@ -16,11 +16,12 @@ const strategyName = 'oidc-test';
 const jwt = oidcProvider.get('jwt');
 const jwt2 = oidcProvider2.get('jwt');
 
-beforeEach((done) => {
+beforeEach(async () => {
   app = createApp({
     strategyName,
   });
-  server = app.listen(app.get('port'), done);
+  // Feathers v5 `app.listen` is async (returns a Promise<Server>).
+  server = await app.listen(app.get('port'));
 
   const authService: AuthenticationService = app.service('authentication');
   [ strategy ] = authService.getStrategies(strategyName) as TestOidcStrategy[];
@@ -32,8 +33,9 @@ beforeEach((done) => {
   };
 });
 
-afterEach((done) => {
-  server.close(done);
+afterEach(async () => {
+  await new Promise<void>((resolve, reject) =>
+    server.close((err) => (err ? reject(err) : resolve())));
 })
 
 describe('strategy', () => {
@@ -186,6 +188,35 @@ describe('handleConnection', () => {
     assert.ok(!connection.authentication);
     assert.ok(!connection.user);
   });
+
+  it('removes authentication information on disconnect', async () => {
+    const connection: any = {};
+    const accessToken = jwt.createToken(validPayload, 10000);
+
+    await app.service('authentication').create({
+      strategy: strategyName,
+      accessToken,
+    }, { connection });
+    assert.ok(connection.authentication);
+    assert.ok(connection.user);
+
+    await strategy.handleConnection('disconnect', connection);
+
+    assert.ok(!connection.authentication);
+    assert.ok(!connection.user);
+  });
+
+  it('ignores connection events from a different strategy', async () => {
+    const connection: any = { existing: true };
+
+    await strategy.handleConnection('login', connection, {
+      accessToken: 'some-token',
+      authentication: { strategy: 'some-other-strategy' },
+    });
+
+    // Connection must be untouched so concurrent strategies can coexist.
+    assert.deepEqual(connection, { existing: true });
+  });
 })
 
 describe('with authenticate hook', () => {
@@ -219,8 +250,8 @@ describe('with authenticate hook', () => {
         accessToken,
       },
     }), {
-      name: 'NotAuthenticated',
-      message: 'Could not find entity service',
+      name: 'Error',
+      message: "Can not find service 'users'",
     });
   });
 
@@ -258,6 +289,26 @@ describe('with authenticate hook', () => {
         authenticated: true
       },
     });
+  });
+
+  it('authenticates an external call and attaches the entity', async () => {
+    const user = await app.service('users').create({
+      name: 'deskoh',
+      [`${strategyName}Id`]: validPayload.sub,
+    });
+    const accessToken = jwt.createToken(validPayload, 10000);
+
+    const result = await app.service('protected').get('test', {
+      provider: 'rest',
+      authentication: {
+        strategy: strategyName,
+        accessToken,
+      },
+    });
+
+    assert.equal(result.params.authenticated, true);
+    assert.equal(result.params.user.id, user.id);
+    assert.equal(result.params.user[`${strategyName}Id`], validPayload.sub);
   });
 });
 

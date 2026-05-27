@@ -1,6 +1,6 @@
-import feathers from '@feathersjs/feathers';
+import { feathers } from '@feathersjs/feathers';
 import express from '@feathersjs/express';
-import memory from 'feathers-memory';
+import { memory } from '@feathersjs/memory';
 import { AuthenticationService, hooks } from '@feathersjs/authentication';
 
 import { OidcStrategy } from '../lib';
