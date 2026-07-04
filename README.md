@@ -47,12 +47,12 @@ Example configuration.
     "oidc": {
       // Whitelisted issuers to trust (string or array) and for OIDC discovery
       // (by appending /.well-known/openid-configuration)
-      "issuer": "http://keycloak.127.0.0.1.nip.io:8080/auth/realms/dev",
+      "issuer": "http://dex.127.0.0.1.nip.io:5556/dex",
       // Optional field to validate `aud`  in JWT field (usually OIDC client ID)
-      "audience": ["spa-client1", "spa-client2"],
+      "audience": ["feathers-spa-client", "spa-client"],
       // Optional: Additional fields from JWT to be populated to entity.
       "additionalFields": ["givenName"],
-      // Optional: Set to true if built-in JwtStrategy is used to using same header / scheme (see below)
+      // Optional: Set to true if using with built-in JwtStrategy (see below)
       "parseIssuer": false
     },
     //...
@@ -62,13 +62,26 @@ Example configuration.
 
 ## Obtaining JWT from OIDC Provider
 
+> An example OIDC provider using Dex can be started using `docker compose  -f example\compose.yml up`
+
 The public client (e.g. Frontend / Single-Page-Application) is responsible to obtain the JWT using Authentication Code Flow (with PKCE according to Best Current Practice). FeathersJS server will not be involved in the process. A general purpose OIDC library that can be used is [oidc-client](https://www.npmjs.com/package/oidc-client). Example of OIDC provider (OP) includes [Keycloak](https://www.keycloak.org/). After obtaining the JWT from the OP, the OP-issued JWT will be used as access token for authenticated calls to FeatherJS server.
+
+### Using OIDC CLI
+
+Download latest binary release from [ctron/oidc-cli](https://github.com/ctron/oidc-cli/releases).
+
+```
+# Create client named `feathers`
+oidc create public feathers --issuer http://dex.127.0.0.1.nip.io:5556/dex --client-id feathers-spa-client --port 8000 --scope "openid email profile" --force
+
+oidc token feathers
+```
 
 ## Authentication
 
 ### Using HTTP Headers
 
-See [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#options) to configure passing ot JWT through the HTTP headers.
+See [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#options) to configure passing of JWT through the HTTP headers.
 
 > If Feathers built-in [JwtStrategy](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) is also configured, see [below](#usage-with-feathers-built-in-jwtstrategy) for correct configuration.
 
@@ -148,22 +161,21 @@ authentication.register('oidc-keycloak', new OidcStrategy() as any);
 
 ## OIDC Providers Customization
 
-To support OpenID Provider-specific JWT claims or JWT verification, the `OidcStrategy` class can be extended and registered using another name.
+To support OpenID Provider-specific JWT claims or JWT verification, the `OidcStrategy` class can be extended and registered using another name. This will only be triggered when user is created or updated (`updateEntity` flag).
 
 ```ts
 import { Application } from '@feathersjs/feathers';
-import { AuthenticationService, JWTStrategy } from '@feathersjs/authentication';
 import { OidcStrategy } from 'feathers-authentication-oidc';
 
-class KeycloakStrategy extends OidcStrategy {
-  getEntityData(profile: any) {
-    // Include the `preferred_username` from the Keycloak profile when creating
-    // or updating a user that logged in with Keycloak
-    const baseData = await super.getEntityData(profile);
+class DexStrategy extends OidcStrategy {
+  getEntityData(decodedJwt: any, params: Params): any {
+    // Include the `preferred_username` from the Dex profile when creating
+    // or updating a user that logged in with Dex
+    const baseData = super.getEntityData(decodedJwt, params);
 
     return {
       ...baseData,
-      username: profile.preferred_username
+      username: decodedJwt.preferred_username
     };
   }
 }
@@ -171,20 +183,16 @@ class KeycloakStrategy extends OidcStrategy {
 export default (app: Application) => {
   const authService = new AuthenticationService(app);
 
-  authService.register('keycloak', new KeycloakStrategy());
+  authService.register('dex', new DexStrategy());
 
   // ...
-  app.use('/authentication', authService);
+  app.use('authentication', authService);
 }
 ```
 
-## Customizing Payload
-
-See Feathers documentation: [Customizing the payload](https://docs.feathersjs.com/cookbook/authentication/stateless.html#customizing-the-payload)
-
 ## Stateless JWT
 
-As the authentication strategy is inherited from [JWT Stategy](https://docs.feathersjs.com/api/authentication/jwt.html), by default, an authentication using a JWT will result in an entity (usually a user) lookup. It possible to bypass this when all the information necessary can be contained in the token payload. See [Stateless JWT](https://docs.feathersjs.com) for more details.
+As the authentication strategy is inherited from [JWT Stategy](https://docs.feathersjs.com/api/authentication/jwt.html), by default, an authentication using a JWT will result in an entity (usually a user) lookup. It possible to bypass this when all the information necessary can be contained in the token payload. See [Stateless JWT](https://feathersjs.com/cookbook/authentication/stateless.html) for more details.
 
 ## Usage with Feathers built-in JwtStrategy
 
@@ -200,15 +208,15 @@ export default function(app: any): void {
   authentication.register('jwt', new JWTStrategy());
   authentication.register('oidc', new OidcStrategy());
 
-  app.use('/authentication', authentication);
+  app.use('authentication', authentication);
 }
 ```
 
 To use JWT in HTTP headers for authentication, you can either
 
-1. Configure unique [`schemes`](https://docs.feathersjs.com/api/authentication/jwt.html#options) for both Strategies or
+1. Configure unique [`schemes`](https://docs.feathersjs.com/api/authentication/jwt.html#options) (default: `['Bearer', 'JWT']`) for both Strategies or
 
-1. Order the preferred Strategy to be used first in the list of [`authStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) or [`parseStrategies`](https://docs.feathersjs.com/api/authentication/service.html#to-authenticate-an-external-request):
+1. Order the preferred Strategy to be used first in the list of [`authStrategies`](https://docs.feathersjs.com/api/authentication/jwt.html#jwtstrategy) or [`parseStrategies`](https://docs.feathersjs.com/api/authentication/service.html#to-authenticate-an-external-request). `parseIssuer` is set to `true` so that [`strategy.parse()`](https://feathersjs.com/api/authentication/strategy.html#parse-req-res) will return `null` if JWT is not issued by whitelisted issuer to allow fallback to built-in `JwtStrategy`:
 
     ```jsonc
     {
@@ -221,7 +229,7 @@ To use JWT in HTTP headers for authentication, you can either
       },
       "oidc": {
         // ...
-        // Strategy to parse and decode JWT issuer and ignore value if issuer is not whitelisted
+        // Set to true to check whether provided JWT is for this strategy.
         "parseIssuer": true
       }
     }

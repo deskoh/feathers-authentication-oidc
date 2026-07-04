@@ -1,0 +1,14 @@
+services:
+  dex:
+    image: dexidp/dex:v2.45.1-distroless
+    container_name: dex
+    ports:
+      - "5556:5556"
+    volumes:
+      - ./config.yaml:/etc/dex/config.yaml
+      - dex_data:/var/dex
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+    restart: unless-stopped
+
+volumes:
+  dex_data:
