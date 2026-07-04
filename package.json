@@ -6,13 +6,14 @@
   "engines": {
     "node": ">= 20.0.0"
   },
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "build": "tsc --strict false -p .",
     "build:watch": "tsc -p . --watch",
-    "test": "npm run build && npm run mocha",
+    "test": "pnpm run build && pnpm run mocha",
     "mocha": "mocha --recursive test/**/*.test.ts --exit",
     "mocha:watch": "mocha --watch --recursive test/**/*.test.ts",
-    "release": "rm -rf lib && npm run build && standard-version release"
+    "release": "rm -rf lib && pnpm run build && standard-version release"
   },
   "repository": "github:deskoh/feathers-authentication-oidc.git",
   "keywords": [

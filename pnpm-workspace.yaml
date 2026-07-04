@@ -1,0 +1,9 @@
+allowBuilds:
+  esbuild: true
+
+# Supply-chain security settings (https://pnpm.io/supply-chain-security)
+blockExoticSubdeps: true
+minimumReleaseAge: 4320 # 3 days
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - chokidar@4.0.3
