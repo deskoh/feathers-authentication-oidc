@@ -1,5 +1,4 @@
 import { promisify } from 'util';
-import * as Axios from 'axios';
 import * as jsonwebtoken from 'jsonwebtoken';
 import { VerifyCallback, VerifyOptions } from 'jsonwebtoken';
 import JwksClient from 'jwks-rsa';
@@ -76,8 +75,12 @@ export default class Verifier {
     // Remove trailing slash.
     const url = `${issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
     debug('getting OIDC configuration from', url);
-    const val = await Axios.default.get(url);
-    const { jwks_uri } = val.data;
+    const response = await fetch(url);
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new Error(`HTTP error ${response.status} fetching ${url}`);
+    }
+    const { jwks_uri } = await response.json() as { jwks_uri: string };
     if (!jwks_uri) {
       throw new Error(`jwks_uri attribute not found in ${url}`);
     }

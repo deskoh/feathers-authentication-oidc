@@ -11,6 +11,7 @@ const port = 3300;
 const path = '/vp';
 const issuer = `http://localhost:${port}${path}`;
 const noJwksIssuer = `http://localhost:${port}/no-jwks`;
+const notFoundIssuer = `http://localhost:${port}/not-found`;
 
 const oidcProvider = provider({ port, path });
 const jwt = oidcProvider.get('jwt');
@@ -29,6 +30,10 @@ before((done) => {
   // A discovery document that omits `jwks_uri` to exercise the error path.
   app.get('/no-jwks/.well-known/openid-configuration', (_req, res) => {
     res.json({ iss: noJwksIssuer });
+  });
+  // A discovery endpoint that returns 404 to exercise the HTTP error path.
+  app.get('/not-found/.well-known/openid-configuration', (_req, res) => {
+    res.status(404).end();
   });
   server = app.listen(port, done);
 });
@@ -93,5 +98,12 @@ describe('Verifier', () => {
     const accessToken = jwt.createToken({ ...validPayload, iss: noJwksIssuer }, 10000);
 
     await assert.rejects(verifier.verifyJwt(accessToken), /jwks_uri attribute not found/);
+  });
+
+  it('rejects when the discovery document endpoint returns a non-2xx status', async () => {
+    const verifier = new Verifier({ issuer: notFoundIssuer });
+    const accessToken = jwt.createToken({ ...validPayload, iss: notFoundIssuer }, 10000);
+
+    await assert.rejects(verifier.verifyJwt(accessToken), /unable to get jwk uri: HTTP error 404/);
   });
 });
