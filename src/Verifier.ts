@@ -1,15 +1,8 @@
-import { promisify } from 'util';
-import * as jsonwebtoken from 'jsonwebtoken';
-import { VerifyCallback, VerifyOptions } from 'jsonwebtoken';
-import JwksClient from 'jwks-rsa';
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose';
+import type { JWTVerifyOptions } from 'jose';
 import Debug from 'debug';
 
 const debug = Debug('feathers-authentication-oidc/verifier');
-
-interface TokenHeader {
-  kid: string;
-  alg: string;
-}
 
 export interface JWT {
   /**
@@ -55,17 +48,13 @@ export interface AccessToken extends JWT {
   scope: string;
 }
 
-type Token = IdToken | AccessToken;
-
-// Specify overload signature for promisfy to infer correctly
-const verify: (token: string, pubKey: string, options: VerifyOptions, callback: VerifyCallback) => void = jsonwebtoken.verify;
-const verifyJwt = promisify(verify.bind(jsonwebtoken));
+type JwkSet = ReturnType<typeof createRemoteJWKSet>;
 
 export default class Verifier {
-  private jwtVerifyOptions: VerifyOptions;
-  private jwkClients: Record<string, JwksClient.JwksClient> = {};
+  private jwtVerifyOptions: JWTVerifyOptions;
+  private jwkSets: Record<string, JwkSet> = {};
 
-  constructor(jwtVerifyOptions: VerifyOptions) {
+  constructor(jwtVerifyOptions: JWTVerifyOptions) {
     const { issuer } = jwtVerifyOptions;
     if (!issuer) throw new Error('issuer not defined');
     this.jwtVerifyOptions = jwtVerifyOptions;
@@ -87,62 +76,35 @@ export default class Verifier {
     return jwks_uri;
   }
 
-  private getJwkClient = async (issuer: string): Promise<JwksClient.JwksClient> => {
-    let jwkClient = this.jwkClients[issuer];
-    if (jwkClient === undefined) {
+  private getJwkSet = async (issuer: string): Promise<JwkSet> => {
+    let jwkSet = this.jwkSets[issuer];
+    if (jwkSet === undefined) {
       try {
         const jwksUri = await this.getJwksUrl(issuer);
-        jwkClient = JwksClient({
-          jwksUri,
+        jwkSet = createRemoteJWKSet(new URL(jwksUri), {
           cacheMaxAge: 30 * 60 * 1000, // 30 mins
         });
       } catch (error: any) {
         throw new Error(`unable to get jwk uri: ${error.message}`);
       }
-      this.jwkClients[issuer] = jwkClient;
+      this.jwkSets[issuer] = jwkSet;
     }
-    return jwkClient;
+    return jwkSet;
   }
 
-  private getPublicKey = async (issuer: string, kid: string): Promise<string> => {
-    const jwkClient = await this.getJwkClient(issuer);
-    const key = await jwkClient.getSigningKey(kid);
-    if (key === null) {
-      throw new Error('unable to get keys or unknown kid');
-    }
-    return key.getPublicKey();
-  };
-
-  private static getTokenHeader(token: string): TokenHeader {
-    const tokenSections = (token || '').split('.');
-    if (tokenSections.length < 2) {
-      throw new Error('requested token is invalid');
-    }
-    const headerJSON = Buffer.from(tokenSections[0], 'base64').toString('utf8');
-    return JSON.parse(headerJSON) as TokenHeader;
-  }
-
-  private async verifyToken(header: TokenHeader, token: string): Promise<Token> {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+  public async verifyJwt(token: string): Promise<AccessToken> {
+    const unverifiedPayload = decodeJwt(token);
     const { issuer } = this.jwtVerifyOptions;
 
-    const isIssuerValid = (typeof issuer === 'string' && payload.iss === issuer) ||
-      (Array.isArray(issuer) && issuer.includes(payload.iss));
+    const isIssuerValid = (typeof issuer === 'string' && unverifiedPayload.iss === issuer) ||
+      (Array.isArray(issuer) && issuer.includes(unverifiedPayload.iss as string));
 
     if (!isIssuerValid) {
       throw new Error(`jwt issuer invalid. expected: ${issuer}`);
     }
 
-    const key = await this.getPublicKey(payload.iss, header.kid);
-    const decodedJwt = await verifyJwt(token, key, this.jwtVerifyOptions) as AccessToken;
-    return decodedJwt;
-  }
-
-  public verifyJwt(token: string): Promise<AccessToken> {
-    // TODO: const { header } = (decode(token, { complete: true }) || {});
-    const header = Verifier.getTokenHeader(token);
-    if (!header) throw new Error('Invalid token');
-
-    return this.verifyToken(header, token) as Promise<AccessToken>;
+    const jwkSet = await this.getJwkSet(unverifiedPayload.iss as string);
+    const { payload } = await jwtVerify(token, jwkSet, this.jwtVerifyOptions);
+    return payload as AccessToken;
   }
 }

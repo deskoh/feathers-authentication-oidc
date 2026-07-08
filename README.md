@@ -15,6 +15,8 @@ The [Best Current Practice (BCP) for Browser-Based Apps](https://datatracker.iet
 npm install feathers-authentication-oidc
 ```
 
+> This package is ESM-only and requires Node.js >= 20.19. CommonJS applications can still `require()` it on Node.js >= 20.19 (which supports `require()` of ES modules) or load it via dynamic `import()`.
+
 ## Usage
 
 ```ts
@@ -59,6 +61,8 @@ Example configuration.
   }
 }
 ```
+
+See [`JWTVerifyOptions`](https://github.com/panva/jose/blob/main/docs/jwt/verify/interfaces/JWTVerifyOptions.md) from `jose` library for additional JWT verification options.
 
 ## Obtaining JWT from OIDC Provider
 
@@ -147,8 +151,6 @@ app.service('messages').hooks({
   }
 });
 ```
-
-See [here](https://www.npmjs.com/package/jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback) JWT verification options.
 
 ## Multiple OIDC Providers
 

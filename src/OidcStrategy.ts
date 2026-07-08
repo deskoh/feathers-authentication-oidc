@@ -4,7 +4,7 @@ import { NotAuthenticated } from '@feathersjs/errors';
 import { Params } from '@feathersjs/feathers';
 import Debug from 'debug';
 
-import Verifier, { JWT } from './Verifier';
+import Verifier, { JWT } from './Verifier.js';
 
 const debug = Debug('feathers-authentication-oidc/strategy');
 

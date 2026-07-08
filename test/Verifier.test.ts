@@ -59,10 +59,8 @@ describe('Verifier', () => {
 
   it('rejects a malformed token', async () => {
     const verifier = new Verifier({ issuer });
-    // `getTokenHeader` throws synchronously, so an async wrapper is needed to
-    // turn it into a rejection.
     await assert.rejects(async () => verifier.verifyJwt('not-a-jwt'), {
-      message: 'requested token is invalid',
+      message: 'Invalid JWT',
     });
   });
 
@@ -90,7 +88,7 @@ describe('Verifier', () => {
       signature,
     ].join('.');
 
-    await assert.rejects(verifier.verifyJwt(tampered), /signing key/i);
+    await assert.rejects(verifier.verifyJwt(tampered), /no applicable key/i);
   });
 
   it('rejects when the discovery document has no jwks_uri', async () => {

@@ -108,16 +108,16 @@ describe('strategy', () => {
     const payload = { ...validPayload, aud: 'clientx' };
     const accessToken = jwt.createToken(payload, 10000);
     await assert.rejects(strategy.authenticate({accessToken}, {}), {
-      name: 'JsonWebTokenError',
-      message: 'jwt audience invalid. expected: client1 or client2'
+      name: 'JWTClaimValidationFailed',
+      message: 'unexpected "aud" claim value'
     });
   });
 
   it('throws error if jwt expired', async () => {
     const accessToken = jwt.createToken(validPayload, -1000);
     await assert.rejects(strategy.authenticate({accessToken}, {}), {
-      name: 'TokenExpiredError',
-      message: 'jwt expired'
+      name: 'JWTExpired',
+      message: '"exp" claim timestamp check failed'
     });
   });
 

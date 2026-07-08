@@ -11,6 +11,10 @@ and entity lookup/creation.
 
 The whole implementation is two files, both re-exported from `src/index.ts`.
 
+The package is ESM-only (`"type": "module"`, `tsconfig` `module: nodenext`) and requires
+Node.js >= 20.19 — CJS consumers load it via `require()` of ESM (supported from 20.19) or dynamic
+`import()`. Relative imports in `src/` must carry explicit `.js` extensions.
+
 ## Commands
 
 - Install: `pnpm install`
@@ -36,12 +40,12 @@ The whole implementation is two files, both re-exported from `src/index.ts`.
 ### `src/Verifier.ts` — token verification, no Feathers dependency
 
 - Given a whitelist of issuer(s) (`jwtVerifyOptions.issuer`, string or array), fetches
-  `<issuer>/.well-known/openid-configuration`, extracts `jwks_uri`, and builds a `jwks-rsa` client
-  per issuer (cached in `this.jwkClients`, 30 min key cache).
-- `verifyJwt(token)`: decodes the header to get `kid`, checks the token's `iss` claim against the
-  configured issuer whitelist **before** doing any network or signature work (fail fast on an
-  untrusted issuer), fetches the matching public key by `kid`, then delegates signature/`exp`/`aud`
-  checks to `jsonwebtoken.verify`.
+  `<issuer>/.well-known/openid-configuration`, extracts `jwks_uri`, and builds a `jose`
+  `createRemoteJWKSet` per issuer (cached in `this.jwkSets`, 30 min key cache).
+- `verifyJwt(token)`: decodes the unverified payload (`jose` `decodeJwt`), checks the token's `iss`
+  claim against the configured issuer whitelist **before** doing any network or signature work
+  (fail fast on an untrusted issuer), then delegates key selection (by `kid`) and
+  signature/`exp`/`aud` checks to `jose`'s `jwtVerify` against the issuer's remote JWK set.
 - Exported as `Verifer` (typo) from `src/index.ts` — this is the existing public API, not a bug to
   fix. Renaming it would break consumers already importing `Verifer` from the published package.
 
@@ -79,7 +83,7 @@ The whole implementation is two files, both re-exported from `src/index.ts`.
   *without* rebuilding will silently test stale code.
 - `test/mockOidcProvider/` spins up a real Express app per test issuer serving
   `/.well-known/openid-configuration` and a JWKS endpoint from a freshly generated RSA keypair
-  (`createJwt.ts`), signing tokens with `jws` directly (bypassing `jsonwebtoken`). This means tests
+  (`createJwt.ts`), signing tokens with `jws` directly (bypassing `jose`). This means tests
   exercise `Verifier`'s discovery + JWKS + signature-verification path end-to-end rather than
   mocking it.
 - `test/fixture.ts` builds a full Feathers app (express + in-memory `users` service) with two

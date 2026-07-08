@@ -1,4 +1,4 @@
-import { OidcStrategy } from './OidcStrategy';
-import Verifer from './Verifier';
+import { OidcStrategy } from './OidcStrategy.js';
+import Verifer from './Verifier.js';
 
 export { OidcStrategy, Verifer };
