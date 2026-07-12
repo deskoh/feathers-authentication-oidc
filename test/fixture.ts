@@ -3,8 +3,8 @@ import express from '@feathersjs/express';
 import { memory } from '@feathersjs/memory';
 import { AuthenticationService, hooks } from '@feathersjs/authentication';
 
-import { OidcStrategy } from '../lib';
-import provider from './mockOidcProvider';
+import { OidcStrategy } from '../lib/index.js';
+import provider from './mockOidcProvider/index.js';
 
 export class TestOidcStrategy extends OidcStrategy {
 }

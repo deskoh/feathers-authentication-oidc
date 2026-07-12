@@ -1,10 +1,13 @@
 {
   "extends": "../tsconfig",
-  "rootDir": "../",
   "include": [
-    "*.test.ts"
+    "../lib/**/*.js",
+    "../test/**/*.ts"
   ],
   "compilerOptions": {
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "types": ["node", "mocha"],
+    "rootDir": "../",
+    "noEmit": true
   }
 }

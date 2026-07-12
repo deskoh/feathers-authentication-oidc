@@ -33,7 +33,7 @@ Node.js >= 20.19 — CJS consumers load it via `require()` of ESM (supported fro
 - Local OIDC provider for manual testing (Dex): `docker compose -f example/compose.yml up`
   (config in `example/config.yaml`; see README "Obtaining JWT from OIDC Provider")
 - There is no lint script configured in `package.json` — don't invent one.
-- CI (`.github/workflows/nodejs.yml`) runs `pnpm install --frozen-lockfile && pnpm test` on Node 20.x/22.x/24.x/25.x.
+- CI (`.github/workflows/nodejs.yml`) runs `pnpm install --frozen-lockfile && pnpm test` on Node 22.x/24.x/25.x.
 
 ## Architecture
 

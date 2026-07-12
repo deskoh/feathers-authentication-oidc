@@ -4,8 +4,7 @@ import http, { ServerResponse } from 'http';
 import { AuthenticationService } from '@feathersjs/authentication';
 import express from '@feathersjs/express';
 
-import { createApp, TestOidcStrategy } from './fixture';
-import { oidcProvider, oidcProvider2 } from './fixture';
+import { createApp, oidcProvider, oidcProvider2, TestOidcStrategy } from './fixture.js';
 
 let server: http.Server;
 let app: express.Application;
