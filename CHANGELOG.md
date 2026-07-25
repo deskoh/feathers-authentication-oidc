@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.6.0](https://github.com/deskoh/feathers-authentication-oidc/compare/v0.5.0...v0.6.0) (2026-07-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* package is ESM-only; CommonJS consumers need Node.js
+>= 20.19 (require() of ESM) or dynamic import(). Verifier constructor
+options are now jose JWTVerifyOptions instead of jsonwebtoken
+VerifyOptions. Node.js engines floor raised to 20.19.0.
+
+### Features
+
+* replace jsonwebtoken and jwks-rsa with jose, convert package to ESM ([ceb4b5a](https://github.com/deskoh/feathers-authentication-oidc/commit/ceb4b5a3d6e5ed50e2fbf5c7c2cb9187cac1f9b7))
+
 ## [0.5.0](https://github.com/deskoh/feathers-authentication-oidc/compare/v0.4.5...v0.5.0) (2026-07-04)
 
 
