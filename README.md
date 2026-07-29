@@ -112,7 +112,7 @@ Authorization: JWT <your JWT>
 
 ### Using [Feathers Client](https://docs.feathersjs.com/api/authentication/client.html)
 
-> The strategy currently returns an `accessToken` with value `none` for current implementation. For Socket.io, to support re-connection, be sure to update value of the token in storage (`feathers-jwt` local storage by default) manually after authentication succeeds or when JWT is refreshed. See `storage` and `storageKey` [configuration](https://docs.feathersjs.com/api/authentication/client.html#configuration) for details.
+> The strategy returns the verified OIDC-issued JWT as-is in `accessToken` (Feathers' own JWT creation is skipped). For Socket.io, to support re-connection, be sure to update value of the token in storage (`feathers-jwt` local storage by default) manually after authentication succeeds or when JWT is refreshed. See `storage` and `storageKey` [configuration](https://docs.feathersjs.com/api/authentication/client.html#configuration) for details.
 
 ```js
 const socket = io('http://localhost:3030');
