@@ -381,6 +381,16 @@ describe('parse', () => {
     assert.strictEqual(result, null);
   });
 
+  it('parseIssuer enabled: returns null instead of throwing for a malformed access token', async () => {
+    const req = {
+      headers: { authorization: 'not-a-jwt' },
+    };
+
+    const result = await app.service('authentication').parse(req, res, `${strategyName}2`);
+
+    assert.strictEqual(result, null);
+  });
+
   it('parseIssuer disabled: parses Authorization header when issuer is incorrect', async () => {
     const accessToken = jwt.createToken(payload, 10000);
     const req = {

@@ -2,6 +2,7 @@ import { IncomingMessage } from 'http';
 import { AuthenticationResult, JWTStrategy, ConnectionEvent, AuthenticationParams } from '@feathersjs/authentication';
 import { NotAuthenticated } from '@feathersjs/errors';
 import { Params } from '@feathersjs/feathers';
+import { decodeJwt } from 'jose';
 import Debug from 'debug';
 
 import Verifier, { JWT } from './Verifier.js';
@@ -34,10 +35,14 @@ export class OidcStrategy extends JWTStrategy {
 
     // Check if accessToken is issued by this server
     const { accessToken = '' } = strategy;
-    const [, payload = undefined] = accessToken.split('.');
-    if (!payload) return strategy;
-
-    const { iss } = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+    let iss: unknown;
+    try {
+      ({ iss } = decodeJwt(accessToken));
+    } catch (error) {
+      // Not a parsable JWT: not ours, let another strategy try.
+      debug('ignoring unparsable access token', error);
+      return null;
+    }
 
     const { issuer: allowedIssuer } = this.configuration;
     const isIssuerValid = (typeof allowedIssuer === 'string' && iss === allowedIssuer) ||
