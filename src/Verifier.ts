@@ -29,7 +29,7 @@ export interface JWT {
   /**
    * Cognito specific value.
    */
-  token_use: 'id' | 'token';
+  token_use?: 'id' | 'token';
   [key: string]: string | number | undefined;
 }
 
