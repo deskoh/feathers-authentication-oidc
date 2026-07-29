@@ -12,6 +12,7 @@ const path = '/vp';
 const issuer = `http://localhost:${port}${path}`;
 const noJwksIssuer = `http://localhost:${port}/no-jwks`;
 const notFoundIssuer = `http://localhost:${port}/not-found`;
+const slowIssuer = `http://localhost:${port}/slow`;
 
 const oidcProvider = provider({ port, path });
 const jwt = oidcProvider.get('jwt');
@@ -34,6 +35,10 @@ before((done) => {
   // A discovery endpoint that returns 404 to exercise the HTTP error path.
   app.get('/not-found/.well-known/openid-configuration', (_req, res) => {
     res.status(404).end();
+  });
+  // A discovery endpoint that never responds, to exercise the fetch timeout path.
+  app.get('/slow/.well-known/openid-configuration', () => {
+    // Intentionally never call res.end()/res.json().
   });
   server = app.listen(port, done);
 });
@@ -103,5 +108,14 @@ describe('Verifier', () => {
     const accessToken = jwt.createToken({ ...validPayload, iss: notFoundIssuer }, 10000);
 
     await assert.rejects(verifier.verifyJwt(accessToken), /unable to get jwk uri: HTTP error 404/);
+  });
+
+  it('rejects instead of hanging when the discovery endpoint never responds', async function () {
+    this.timeout(7000);
+
+    const verifier = new Verifier({ issuer: slowIssuer });
+    const accessToken = jwt.createToken({ ...validPayload, iss: slowIssuer }, 10000);
+
+    await assert.rejects(verifier.verifyJwt(accessToken), /unable to get jwk uri/);
   });
 });

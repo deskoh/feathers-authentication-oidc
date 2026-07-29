@@ -4,6 +4,8 @@ import Debug from 'debug';
 
 const debug = Debug('feathers-authentication-oidc/verifier');
 
+const DISCOVERY_TIMEOUT_MS = 5000;
+
 export interface JWT {
   /**
    * Subject Identifier. A locally unique and never reassigned identifier within the Issuer for
@@ -64,7 +66,7 @@ export default class Verifier {
     // Remove trailing slash.
     const url = `${issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
     debug('getting OIDC configuration from', url);
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(DISCOVERY_TIMEOUT_MS) });
     if (!response.ok) {
       await response.body?.cancel();
       throw new Error(`HTTP error ${response.status} fetching ${url}`);
