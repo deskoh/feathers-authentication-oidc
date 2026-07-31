@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [22.x, 24.x, 25.x]
+        node-version: [lts/-1, lts/*, current]
 
     steps:
     - uses: actions/checkout@v5
@@ -22,6 +22,6 @@ jobs:
     - name: pnpm install, build, and test
       run: |
         pnpm install --frozen-lockfile
-        pnpm test
+        pnpm run coverage
       env:
         CI: true

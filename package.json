@@ -13,10 +13,11 @@
   "engines": {
     "node": ">= 20.19.0"
   },
-  "packageManager": "pnpm@11.1.2",
+  "packageManager": "pnpm@11.18.0",
   "scripts": {
     "build": "tsc --strict false -p .",
     "build:watch": "tsc -p . --watch",
+    "coverage": "c8 --reporter=lcov --reporter=text --reporter=cobertura pnpm run test",
     "test": "pnpm run build && pnpm run mocha",
     "mocha": "mocha --recursive test/**/*.test.ts --exit",
     "mocha:watch": "mocha --watch --recursive test/**/*.test.ts",
@@ -48,6 +49,7 @@
     "@types/debug": "^4.1.13",
     "@types/mocha": "^10.0.1",
     "@types/node": "^24.12.4",
+    "c8": "^12.0.0",
     "jws": "^4.0.1",
     "mocha": "^11.7.6",
     "pem-jwk": "^2.0.0",
